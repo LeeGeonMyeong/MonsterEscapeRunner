@@ -38,7 +38,7 @@
 
 공개 게임: https://leegeonmyeong.github.io/MonsterEscapeRunner/
 
-로컬 작업 폴더 D:/Git/Runner는 Unity 프로젝트입니다. Git 업로드는 별도 배포 체크아웃에서 진행합니다. 실제 스마트폰 검증은 아래 URL로 진행하세요.
+로컬 작업 폴더 D:/Git/Runner도 이 저장소와 연결되어 있습니다. 실제 스마트폰 검증은 위 URL로 진행하세요.
 
 1. 본인의 Public GitHub 저장소에 Assets, Packages, ProjectSettings, README.md, .gitignore, docs를 넣습니다.
 2. Library, Logs, obj 등은 .gitignore로 제외합니다. docs/Build는 제외하지 않습니다.
@@ -50,3 +50,9 @@
 
 Unity 전투 검사: Assets/Editor/RunnerSmokeCheck.cs. 기존 RunnerMobileCheck.Start도 같은 통합 검사를 실행합니다. 테스트 코드는 빌드에 포함되지 않습니다.
 전투 변경 전 백업: DevelopmentBackup/BeforeCombat. 이전 안내 문서들은 이전 회피 버전의 기록입니다.
+
+## 휴대폰 테스트와 캡처
+
+[테스트 안내](output/mobile/휴대폰_테스트_안내.md) · [QR](output/mobile/MonsterStrikeRunner-QR.png) · [공개 전투 화면](output/mobile/Public-Mobile-Combat.jpg)
+
+기존 로컬 웹 파일 66.36 MiB에서 10.15 MiB로 약 84.7% 감소했습니다. 실제 스마트폰 테스트는 공개 게임 주소로 진행하세요.
