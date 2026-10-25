@@ -43,7 +43,6 @@ public class GameManager : MonoBehaviour
     private float noticeTime;
     private PlayerController player;
     private GameObject swipeArea, holdControls;
-    private Text controlsHelp;
     private Image chargeFill;
     private Text chargeLabel;
     private GameObject tutorialGuide, tutorialFinish;
@@ -290,7 +289,6 @@ public class GameManager : MonoBehaviour
     {
         swipeArea.SetActive(visible);
         holdControls.SetActive(visible);
-        controlsHelp.gameObject.SetActive(visible);
     }
     private void BuildTutorial()
     {
@@ -371,8 +369,6 @@ public class GameManager : MonoBehaviour
         chargeFill.rectTransform.pivot = new Vector2(0f, 0.5f);
         chargeFill.rectTransform.localScale = new Vector3(0f, 1f, 1f);
         chargeLabel = charge.GetComponentInChildren<Text>();
-        controlsHelp = MakeText("Controls", canvas.transform, new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(450f, 24f), 16);
-        controlsHelp.text = "◀ ▶ 눌러 이동 · PC: 스페이스 공격 / ↓ 충전";
     }
     private Button MakeControlButton(string name, Transform parent, Vector2 position, Vector2 size, string text, Vector2 anchor)
     {
