@@ -177,7 +177,7 @@ public class GameManager : MonoBehaviour
         title.color = new Color(0.45f, 1f, 0.85f);
         Text rules = MakeText("StartRules", startPanel.transform, new Vector2(0.5f, 0.5f),
             new Vector2(0f, 80f), new Vector2(460f, 120f), 21);
-        rules.text = "◀ ▶ 버튼으로 차선 이동\n일반 공격 · 꾹 눌러 충전\n어느 차선이든 놓치면 체력 1 감소\n일반 50점 · 강화 90점\n60초 동안 몬스터를 막아 보세요";
+        rules.text = "◀ ▶ 버튼으로 차선 이동\n일반 공격 · 꾹 눌러 충전\n화면 아래로 놓치면 체력 1 감소\n일반 50점 · 강화 90점\n60초 동안 몬스터를 막아 보세요";
         rules.rectTransform.sizeDelta = new Vector2(460f, 180f);
         rules.rectTransform.anchoredPosition = new Vector2(0f, 30f);
         GameObject obj = new GameObject("StartButton", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -323,7 +323,7 @@ public class GameManager : MonoBehaviour
         title.color = new Color(0.45f, 1f, 0.85f);
         Text summary = MakeText("TutorialSummary", finish.transform, new Vector2(0.5f, 0.5f),
             new Vector2(0f, 35f), new Vector2(440f, 200f), 22);
-        summary.text = "60초 동안 몬스터를 막아 보세요.\n일반 50점 · 강화 90점\n시간만 지나면 점수가 오르지 않아요.\n어느 차선이든 놓치면 체력 1 감소\n체력이 0이면 게임이 끝나요.";
+        summary.text = "60초 동안 몬스터를 막아 보세요.\n일반 50점 · 강화 90점\n시간만 지나면 점수가 오르지 않아요.\n화면 아래로 놓치면 체력 1 감소\n체력이 0이면 게임이 끝나요.";
         Button play = MakeControlButton("TutorialPlayButton", finish.transform, new Vector2(0f, -160f),
             new Vector2(300f, 85f), "전투 시작", new Vector2(0.5f, 0.5f));
         play.GetComponentInChildren<Text>().fontSize = 30;

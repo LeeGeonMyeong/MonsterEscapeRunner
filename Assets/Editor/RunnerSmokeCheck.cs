@@ -12,7 +12,7 @@ public static class RunnerSmokeCheck
 {
     private static int stage;
     private static float deadline;
-    private static ObstacleMover normal, armored;
+    private static ObstacleMover normal, armored, overlapping;
     private static int stoppedScore;
     static RunnerSmokeCheck()
     {
@@ -115,10 +115,15 @@ public static class RunnerSmokeCheck
                     break;
                 case 4:
                     Require(manager.Kills == 4 && player.CurrentHP == 3 && manager.CurrentScore == 280, "Charged shot pierces multiple enemies with correct 50/90 kill rewards");
-                    Spawn(2, -3.6f);
+                    overlapping = Spawn(player.transform.position.x, player.transform.position.y);
                     deadline = Time.time + 0.15f;
                     break;
                 case 5:
+                    Require(player.CurrentHP == 3 && manager.Misses == 0 && !overlapping.GetComponent<BoxCollider2D>().enabled, "Direct overlap and crossing behind player cause no damage");
+                    overlapping.transform.position = new Vector3(2f, ObstacleMover.MissBoundaryY - 0.1f, 0f);
+                    deadline = Time.time + 0.15f;
+                    break;
+                case 6:
                     Require(player.CurrentHP == 2 && manager.Misses == 1, "Miss in another lane removes one HP");
                     Require((int)typeof(GameManager).GetField("deductedScore", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager) == 30, "Miss deducts score once");
                     Spawn(0, 1); Spawn(-2, 3, 2);
@@ -131,20 +136,20 @@ public static class RunnerSmokeCheck
                     Require((int)typeof(PlayerController).GetField("currentLane", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(player) == 2, "Right arrow stops at right lane boundary");
                     deadline = Time.time + 0.3f;
                     break;
-                case 6:
+                case 7:
                     Require(Mathf.Abs(player.transform.position.x - 2f) < 0.05f, "Swipe changes aiming lane");
                     player.BeginCharge();
                     GameObject.Find("ChargeButton").SetActive(false);
                     Require(!player.IsCharging, "Disabled hold UI cancels charge without firing");
-                    Spawn(-2, -3.6f);
-                    deadline = Time.time + 0.15f;
-                    break;
-                case 7:
-                    Require(player.CurrentHP == 1 && manager.Misses == 2, "Second miss removes one HP");
-                    Spawn(0, -3.6f);
+                    Spawn(-2, ObstacleMover.MissBoundaryY - 0.1f);
                     deadline = Time.time + 0.15f;
                     break;
                 case 8:
+                    Require(player.CurrentHP == 1 && manager.Misses == 2, "Second miss removes one HP");
+                    Spawn(0, ObstacleMover.MissBoundaryY - 0.1f);
+                    deadline = Time.time + 0.15f;
+                    break;
+                case 9:
                     Require(player.CurrentHP == 0 && manager.State == GameManager.RunState.Ended, "Third miss ends game");
                     Require(GameObject.Find("Result").GetComponent<Text>().text.Contains("처치 4 / 놓침 3"), "Result displays kill and miss totals");
                     stoppedScore = manager.CurrentScore;
@@ -153,19 +158,19 @@ public static class RunnerSmokeCheck
                     RunnerPreviewCapture.Save("CombatResult");
                     deadline = Time.time + 0.2f;
                     break;
-                case 9:
+                case 10:
                     Require(manager.CurrentScore == stoppedScore, "Score freezes after end");
                     GameObject.Find("RestartButton").GetComponent<Button>().onClick.Invoke();
                     deadline = Time.time + 0.3f;
                     break;
-                case 10:
+                case 11:
                     Require(player.CurrentHP == 3 && manager.CurrentScore == 0 && manager.Kills == 0 && manager.Misses == 0 && manager.State == GameManager.RunState.Ready, "Restart resets combat and score");
                     Require(ObstacleMover.ActiveMonsters.Count == 0 && !player.IsCharging, "Restart clears enemies and charge");
                     manager.StartGame();
                     typeof(GameManager).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 0.2f);
                     deadline = Time.time + 0.3f;
                     break;
-                case 11:
+                case 12:
                     Require(manager.State == GameManager.RunState.Ended && GameObject.Find("Result").GetComponent<Text>().text.Contains("방어 성공!"), "Survival timer still ends run");
                     Require(manager.CurrentScore == 0, "Surviving a run without kills earns zero points");
                     SessionState.SetBool("RunnerCombatCheck", false);

@@ -11,6 +11,9 @@ public class ObstacleMover : MonoBehaviour
     public bool IsResolved { get; private set; }
     public bool IsArmored => MaximumHealth > 1;
     public float CurrentMoveSpeed => GameManager.Instance != null ? GameManager.Instance.ObstacleSpeed : moveSpeed;
+    // Leave enough margin for the whole sprite and health markers to exit the camera.
+    public static float MissBoundaryY => Camera.main != null
+        ? Camera.main.transform.position.y - Camera.main.orthographicSize - 1f : -6f;
     private Transform visual;
     private SpriteRenderer artwork;
     private PlayerController player;
@@ -82,8 +85,8 @@ public class ObstacleMover : MonoBehaviour
         visual.localPosition = Vector3.up * (Mathf.Abs(step) * 0.08f + flash * 0.8f);
         visual.localScale = new Vector3(1f + step * 0.045f + flash, 1f - step * 0.045f - flash, 1f);
         visual.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(Time.time * 8f + transform.position.x) * 4f);
-        // A monster in ANY lane that crosses the defense line counts as missed.
-        if (player != null && transform.position.y < player.transform.position.y - 0.45f)
+        // Overlapping the player is harmless. Only a complete exit counts as a miss.
+        if (transform.position.y < MissBoundaryY)
         {
             IsResolved = true;
             GameManager.Instance.RecordMiss();
