@@ -11,8 +11,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float duration = 60f;
     [SerializeField] private Canvas canvas;
     [SerializeField] private Text hpText;
-    [SerializeField] private float startingObstacleSpeed = 3f;
-    [SerializeField] private float maximumObstacleSpeed = 5.5f;
+    [SerializeField] private float startingObstacleSpeed = 2.6f;
+    [SerializeField] private float maximumObstacleSpeed = 7f;
     [SerializeField] private int collisionScorePenalty = 30;
     public RunState State { get; private set; } = RunState.Ready;
     public bool IsPlaying => State == RunState.Playing;
@@ -23,8 +23,9 @@ public class GameManager : MonoBehaviour
     public float ElapsedTime => elapsed;
     public float DifficultyProgress => Mathf.Clamp01(elapsed / Mathf.Max(1f, duration));
     public int DifficultyLevel => Mathf.Min(4, Mathf.FloorToInt(DifficultyProgress * 4f) + 1);
-    public float ObstacleSpeed => Mathf.Lerp(Mathf.Max(0.1f, startingObstacleSpeed * 0.73f),
-        Mathf.Max(startingObstacleSpeed, maximumObstacleSpeed), DifficultyProgress);
+    // Match speed changes to the four visible stages, rather than an imperceptible per-frame ramp.
+    public float ObstacleSpeed => Mathf.Lerp(Mathf.Max(0.1f, startingObstacleSpeed),
+        Mathf.Max(startingObstacleSpeed, maximumObstacleSpeed), (DifficultyLevel - 1) / 3f);
     private float elapsed;
     private int deductedScore, killScore;
     public int Kills { get; private set; }
@@ -118,7 +119,7 @@ public class GameManager : MonoBehaviour
         {
             displayedLevel = DifficultyLevel;
             noticeTime = 1.6f;
-            levelNotice.text = displayedLevel + "단계 · 몬스터가 빨라져요!";
+            levelNotice.text = displayedLevel + "단계 · 속도 " + (ObstacleSpeed / Mathf.Max(0.1f, startingObstacleSpeed)).ToString("0.0") + "배!";
         }
     }
     public void EndGame(bool survived)

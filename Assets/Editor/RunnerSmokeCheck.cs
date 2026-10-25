@@ -57,7 +57,17 @@ public static class RunnerSmokeCheck
                     Require(manager.State == GameManager.RunState.Ready, "Ready screen");
                     float openingSpeed = manager.ObstacleSpeed;
                     ObstacleSpawner spawner = manager.GetComponent<ObstacleSpawner>();
-                    Require(openingSpeed < 2.3f && spawner.CurrentSpawnInterval >= 2.3f, "Gentle opening speed and spawn spacing");
+                    Require(Mathf.Abs(openingSpeed - 2.6f) < 0.01f && spawner.CurrentSpawnInterval >= 2.3f, "Opening speed and spawn spacing");
+                    float previousSpeed = openingSpeed;
+                    for (int level = 1; level <= 4; level++)
+                    {
+                        typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, (level - 1) * 15f);
+                        float stageSpeed = manager.ObstacleSpeed;
+                        Require(manager.DifficultyLevel == level && (level == 1 || stageSpeed / previousSpeed >= 1.25f), "Noticeable speed increase at stage " + level);
+                        typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, level * 15f - 0.01f);
+                        Require(Mathf.Abs(manager.ObstacleSpeed - stageSpeed) < 0.001f, "Speed remains stable within stage " + level);
+                        previousSpeed = stageSpeed;
+                    }
                     typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 60f);
                     Require(manager.ObstacleSpeed > openingSpeed && spawner.CurrentSpawnInterval < 1.1f, "Difficulty ramps to final pace");
                     typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 0f);
