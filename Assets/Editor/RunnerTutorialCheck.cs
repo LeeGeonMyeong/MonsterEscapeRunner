@@ -74,16 +74,19 @@ public static class RunnerTutorialCheck
                     player.TakeMissDamage();
                     Require(player.CurrentHP == 3, "Practice cannot damage player");
                     RunnerPreviewCapture.Save("TutorialSwipe");
-                    ExecuteEvents.Execute(GameObject.Find("SwipeArea"), Pointer(0), ExecuteEvents.pointerDownHandler);
-                    ExecuteEvents.Execute(GameObject.Find("SwipeArea"), Pointer(10), ExecuteEvents.pointerUpHandler);
-                    ExecuteEvents.Execute(GameObject.Find("SwipeArea"), Pointer(0), ExecuteEvents.pointerDownHandler);
-                    ExecuteEvents.Execute(GameObject.Find("SwipeArea"), Pointer(1000), ExecuteEvents.pointerUpHandler);
+                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(0), ExecuteEvents.pointerDownHandler);
+                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(10), ExecuteEvents.pointerUpHandler);
+                    Require(manager.TutorialStep == 0 && !player.IsCharging, "Movement pad tap does not move or attack");
+                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(0), ExecuteEvents.pointerDownHandler);
+                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(1000), ExecuteEvents.pointerUpHandler);
                     deadline = Time.time + 0.5f;
                     break;
                 case 2:
                     Require(manager.TutorialStep == 1 && player.transform.position.x > 1.9f, "Real swipe advances to attack lesson");
                     RunnerPreviewCapture.Save("TutorialAttack");
-                    Click("AttackButton");
+                    Require(GameObject.Find("AttackButton") == null, "No duplicate attack button");
+                    ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerDownHandler);
+                    ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerUpHandler);
                     deadline = Time.time + 0.5f;
                     break;
                 case 3:

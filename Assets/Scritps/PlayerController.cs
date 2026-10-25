@@ -98,6 +98,7 @@ public class PlayerController : MonoBehaviour
         IsCharging = false;
         bool fired = Fire(full ? 2 : 1, full);
         if (full && fired) GameManager.Instance.ReportTutorialAction(2);
+        else if (fired && GameManager.Instance.TutorialStep == 1) GameManager.Instance.ReportTutorialAction(1);
         else if (!full) GameManager.Instance.HintIncompleteCharge();
     }
     public void CancelCharge() { IsCharging = false; }

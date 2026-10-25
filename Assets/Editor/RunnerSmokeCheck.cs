@@ -69,7 +69,9 @@ public static class RunnerSmokeCheck
                     manager.GetComponent<ObstacleSpawner>().enabled = false;
                     foreach (ObstacleMover monster in UnityEngine.Object.FindObjectsByType<ObstacleMover>(FindObjectsSortMode.None)) UnityEngine.Object.Destroy(monster.gameObject);
                     normal = Spawn(0, -1);
-                    GameObject.Find("AttackButton").GetComponent<Button>().onClick.Invoke();
+                    Require(GameObject.Find("AttackButton") == null, "Single attack button replaces duplicate normal button");
+                    ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerDownHandler);
+                    ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerUpHandler);
                     player.Attack();
                     Require(UnityEngine.Object.FindObjectsByType<MonsterShot>(FindObjectsSortMode.None).Length == 1, "Attack cooldown blocks duplicate shot");
                     deadline = Time.time + 0.4f;
@@ -111,7 +113,7 @@ public static class RunnerSmokeCheck
                     Require((int)typeof(GameManager).GetField("deductedScore", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager) == 30, "Miss deducts score once");
                     Spawn(0, 1); Spawn(-2, 3, 2);
                     RunnerPreviewCapture.Save("CombatPlaying");
-                    GameObject surface = GameObject.Find("SwipeArea");
+                    GameObject surface = GameObject.Find("MovePad");
                     ExecuteEvents.Execute(surface, Pointer(0), ExecuteEvents.pointerDownHandler);
                     ExecuteEvents.Execute(surface, Pointer(1000), ExecuteEvents.pointerUpHandler);
                     deadline = Time.time + 0.3f;

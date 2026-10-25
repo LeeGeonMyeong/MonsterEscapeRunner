@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviour
     private int displayedLevel = 1;
     private float noticeTime;
     private PlayerController player;
-    private GameObject swipeArea, clickControls, holdControls;
+    private GameObject swipeArea, holdControls;
     private Text controlsHelp;
     private Image chargeFill;
     private Text chargeLabel;
@@ -254,9 +254,9 @@ public class GameManager : MonoBehaviour
     {
         string[] titles = { "1 / 3  좌우로 스와이프", "2 / 3  일반 공격", "3 / 3  충전 공격" };
         string[] bodies = {
-            "화면의 빈 곳을 좌우로 밀어\n차선을 바꿔 보세요.\nPC: 좌우 방향키",
-            "아래의 [일반 공격]을 눌러요.\n현재 차선의 앞으로 발사해요.\n보라색 몬스터는 한 발로 처치해요.",
-            "아래 충전 버튼을 길게 누르세요.\n막대가 가득 차면 손을 떼세요.\n주황 몬스터도 한 발로 처치해요."
+            "왼쪽 [이동] 패드를 좌우로 밀어\n차선을 바꿔 보세요.\n화면의 빈 곳이나 PC 방향키도 가능해요.",
+            "오른쪽 [공격]을 짧게 눌렀다 떼세요.\n현재 차선의 앞으로 발사해요.\n보라색 몬스터는 한 발로 처치해요.",
+            "같은 오른쪽 [공격]을 길게 누르세요.\n막대가 가득 차면 손을 떼세요.\n주황 몬스터도 한 발로 처치해요."
         };
         tutorialTitle.text = titles[TutorialStep];
         tutorialBody.text = bodies[TutorialStep];
@@ -288,7 +288,6 @@ public class GameManager : MonoBehaviour
     private void SetControlsVisible(bool visible)
     {
         swipeArea.SetActive(visible);
-        clickControls.SetActive(visible);
         holdControls.SetActive(visible);
         controlsHelp.gameObject.SetActive(visible);
     }
@@ -343,9 +342,8 @@ public class GameManager : MonoBehaviour
         surface.rectTransform.offsetMin = surface.rectTransform.offsetMax = Vector2.zero;
         surface.transform.SetAsFirstSibling();
         surface.gameObject.AddComponent<RunnerSwipeInput>().player = player;
-        clickControls = new GameObject("ClickControls", typeof(RectTransform));
         holdControls = new GameObject("HoldControls", typeof(RectTransform));
-        foreach (GameObject group in new[] { clickControls, holdControls })
+        foreach (GameObject group in new[] { holdControls })
         {
             group.transform.SetParent(canvas.transform, false);
             RectTransform rect = (RectTransform)group.transform;
@@ -353,11 +351,13 @@ public class GameManager : MonoBehaviour
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
         }
-        Button attack = MakeControlButton("AttackButton", clickControls.transform,
-            new Vector2(-110f, 70f), new Vector2(170f, 85f), "일반 공격", new Vector2(0.5f, 0f));
-        attack.onClick.AddListener(player.Attack);
+        Button move = MakeControlButton("MovePad", holdControls.transform,
+            new Vector2(-110f, 70f), new Vector2(170f, 85f), "← 이동 →\n좌우로 밀기", new Vector2(0.5f, 0f));
+        move.enabled = false;
+        move.GetComponentInChildren<Text>().fontSize = 21;
+        move.gameObject.AddComponent<RunnerSwipeInput>().player = player;
         Button charge = MakeControlButton("ChargeButton", holdControls.transform,
-            new Vector2(110f, 70f), new Vector2(170f, 85f), "꾹 눌러 충전", new Vector2(0.5f, 0f));
+            new Vector2(110f, 70f), new Vector2(170f, 85f), "공격\n길게 눌러 충전", new Vector2(0.5f, 0f));
         charge.enabled = false;
         charge.GetComponent<Image>().color = new Color(0.4f, 0.23f, 0.1f, 0.95f);
         charge.gameObject.AddComponent<RunnerHoldInput>().player = player;
@@ -449,7 +449,7 @@ public class GameManager : MonoBehaviour
     {
         if (healthFill == null) return;
         chargeFill.rectTransform.localScale = new Vector3(player.ChargeProgress, 1f, 1f);
-        chargeLabel.text = player.ChargeProgress >= 1f ? "손을 떼세요!" : (player.IsCharging ? "충전 중..." : "꾹 눌러 충전");
+        chargeLabel.text = player.ChargeProgress >= 1f ? "손을 떼세요!" : (player.IsCharging ? "충전 중..." : "공격\n길게 눌러 충전");
         float delta = Time.unscaledDeltaTime;
         noticeTime = Mathf.Max(0f, noticeTime - delta);
         levelNotice.color = new Color(1f, 0.8f, 0.3f, Mathf.Clamp01(noticeTime / 0.4f));
