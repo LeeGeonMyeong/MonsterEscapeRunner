@@ -55,10 +55,17 @@ public static class RunnerSmokeCheck
             {
                 case 0:
                     Require(manager.State == GameManager.RunState.Ready, "Ready screen");
+                    float openingSpeed = manager.ObstacleSpeed;
+                    ObstacleSpawner spawner = manager.GetComponent<ObstacleSpawner>();
+                    Require(openingSpeed < 2.3f && spawner.CurrentSpawnInterval >= 2.3f, "Gentle opening speed and spawn spacing");
+                    typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 60f);
+                    Require(manager.ObstacleSpeed > openingSpeed && spawner.CurrentSpawnInterval < 1.1f, "Difficulty ramps to final pace");
+                    typeof(GameManager).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 0f);
+                    Require(CharacterArt.Hero != null && CharacterArt.Monster != null, "Unified character art loads");
                     player.Attack(); player.BeginCharge(); player.MoveRight();
                     Require(!player.IsCharging && UnityEngine.Object.FindObjectsByType<MonsterShot>(FindObjectsSortMode.None).Length == 0, "No combat before START");
                     RunnerPreviewCapture.Save("CombatStart");
-                    GameObject.Find("StartButton").GetComponent<Button>().onClick.Invoke();
+                    manager.StartGame();
                     manager.GetComponent<ObstacleSpawner>().enabled = false;
                     foreach (ObstacleMover monster in UnityEngine.Object.FindObjectsByType<ObstacleMover>(FindObjectsSortMode.None)) UnityEngine.Object.Destroy(monster.gameObject);
                     normal = Spawn(0, -1);
@@ -90,6 +97,8 @@ public static class RunnerSmokeCheck
                     Require(player.IsCharging, "Other pointer cannot release charge");
                     ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerUpHandler);
                     Require(!player.IsCharging && UnityEngine.Object.FindFirstObjectByType<MonsterShot>().Piercing, "Release fires charged projectile");
+                    float recovery = (float)typeof(PlayerController).GetField("nextAttack", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(player) - Time.time;
+                    Require(recovery > 0f && recovery <= 0.13f, "Charged attack has fast recovery advantage");
                     deadline = Time.time + 0.4f;
                     break;
                 case 4:
@@ -122,7 +131,7 @@ public static class RunnerSmokeCheck
                     break;
                 case 8:
                     Require(player.CurrentHP == 0 && manager.State == GameManager.RunState.Ended, "Third miss ends game");
-                    Require(GameObject.Find("Result").GetComponent<Text>().text.Contains("KILLS : 4 / MISSED : 3"), "Result displays kill and miss totals");
+                    Require(GameObject.Find("Result").GetComponent<Text>().text.Contains("처치 4 / 놓침 3"), "Result displays kill and miss totals");
                     stoppedScore = manager.CurrentScore;
                     player.Attack();
                     Require(manager.ApplyCollisionPenalty() == 0, "No score penalties after end");
@@ -137,12 +146,12 @@ public static class RunnerSmokeCheck
                 case 10:
                     Require(player.CurrentHP == 3 && manager.CurrentScore == 0 && manager.Kills == 0 && manager.Misses == 0 && manager.State == GameManager.RunState.Ready, "Restart resets combat and score");
                     Require(ObstacleMover.ActiveMonsters.Count == 0 && !player.IsCharging, "Restart clears enemies and charge");
-                    GameObject.Find("StartButton").GetComponent<Button>().onClick.Invoke();
+                    manager.StartGame();
                     typeof(GameManager).GetField("duration", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, 0.2f);
                     deadline = Time.time + 0.3f;
                     break;
                 case 11:
-                    Require(manager.State == GameManager.RunState.Ended && GameObject.Find("Result").GetComponent<Text>().text.Contains("SURVIVED!"), "Survival timer still ends run");
+                    Require(manager.State == GameManager.RunState.Ended && GameObject.Find("Result").GetComponent<Text>().text.Contains("방어 성공!"), "Survival timer still ends run");
                     Require(manager.CurrentScore == 0, "Surviving a run without kills earns zero points");
                     SessionState.SetBool("RunnerCombatCheck", false);
                     Debug.Log("RUNNER_COMBAT_PASS: normal shot, armor HP, charge, pierce, cooldown, off-lane miss damage, swipe, result, restart and timer");

@@ -17,6 +17,7 @@ public static class RunnerWebBuild
         // GitHub Pages cannot set Content-Encoding; the bundled decoder handles compressed files.
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
         PlayerSettings.WebGL.decompressionFallback = true;
+        PlayerSettings.WebGL.nameFilesAsHashes = true;
         PlayerSettings.stripEngineCode = true;
         PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
         PlayerSettings.SetIl2CppCodeGeneration(NamedBuildTarget.WebGL, Il2CppCodeGeneration.OptimizeSize);

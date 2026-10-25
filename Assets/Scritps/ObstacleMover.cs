@@ -15,6 +15,7 @@ public class ObstacleMover : MonoBehaviour
     private SpriteRenderer artwork;
     private PlayerController player;
     private float flash;
+    private float deathTime;
     private readonly List<SpriteRenderer> healthPips = new List<SpriteRenderer>();
     private void Awake()
     {
@@ -59,12 +60,27 @@ public class ObstacleMover : MonoBehaviour
     }
     private void Update()
     {
-        if (IsResolved || GameManager.Instance == null || !GameManager.Instance.IsPlaying) return;
+        if (IsResolved)
+        {
+            if (deathTime > 0f)
+            {
+                deathTime -= Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(deathTime / 0.25f);
+                visual.localScale = Vector3.one * (0.6f + t * 0.4f);
+                visual.Rotate(0, 0, 300f * Time.unscaledDeltaTime);
+                artwork.color = new Color(1f, 1f, 1f, t);
+                if (deathTime <= 0f) Destroy(gameObject);
+            }
+            return;
+        }
+        if (GameManager.Instance == null || !GameManager.Instance.IsPlaying) return;
         transform.position += Vector3.down * CurrentMoveSpeed * Time.deltaTime;
         flash = Mathf.Max(0, flash - Time.deltaTime);
         RefreshAppearance();
         if (flash > 0) artwork.color = Color.white;
-        visual.localPosition = Vector3.up * Mathf.Sin(Time.time * 10f + transform.position.x) * 0.04f;
+        float step = Mathf.Sin(Time.time * 10f + transform.position.x);
+        visual.localPosition = Vector3.up * (Mathf.Abs(step) * 0.08f + flash * 0.8f);
+        visual.localScale = new Vector3(1f + step * 0.045f + flash, 1f - step * 0.045f - flash, 1f);
         visual.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(Time.time * 8f + transform.position.x) * 4f);
         // A monster in ANY lane that crosses the defense line counts as missed.
         if (player != null && transform.position.y < player.transform.position.y - 0.45f)
@@ -86,7 +102,8 @@ public class ObstacleMover : MonoBehaviour
         {
             IsResolved = true;
             GameManager.Instance.RecordKill(IsArmored ? 90 : 50);
-            Destroy(gameObject);
+            deathTime = 0.25f;
+            foreach (SpriteRenderer pip in healthPips) pip.enabled = false;
         }
         return true;
     }

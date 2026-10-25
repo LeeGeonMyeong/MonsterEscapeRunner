@@ -18,6 +18,17 @@ public class MonsterShot : MonoBehaviour
         renderer.sprite = Pixel;
         renderer.color = piercing ? new Color(1f, 0.7f, 0.15f) : new Color(0.3f, 1f, 0.85f);
         renderer.sortingOrder = 10;
+        // A bright core and tapered trail distinguish the charged bolt at phone size.
+        if (piercing)
+        {
+            GameObject core = new GameObject("ChargedCore");
+            core.transform.SetParent(obj.transform, false);
+            core.transform.localScale = new Vector3(0.4f, 0.8f, 1f);
+            SpriteRenderer glow = core.AddComponent<SpriteRenderer>();
+            glow.sprite = Pixel;
+            glow.color = new Color(1f, 1f, 0.8f);
+            glow.sortingOrder = 11;
+        }
         MonsterShot shot = obj.AddComponent<MonsterShot>();
         shot.Damage = damage;
         shot.Piercing = piercing;
@@ -25,7 +36,7 @@ public class MonsterShot : MonoBehaviour
     }
     private void Update()
     {
-        if (GameManager.Instance == null || !GameManager.Instance.IsPlaying) { Destroy(gameObject); return; }
+        if (GameManager.Instance == null || !GameManager.Instance.CanControl) { Destroy(gameObject); return; }
         float previousY = transform.position.y;
         transform.position += Vector3.up * 12f * Time.deltaTime;
         // Sweep the travelled segment to catch hits even on a slow browser frame.

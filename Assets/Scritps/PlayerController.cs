@@ -10,13 +10,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int maxHP = 3;
     [SerializeField] private Text hpText;
     [SerializeField] private float attackCooldown = 0.35f;
-    [SerializeField] private float chargeDuration = 0.65f;
+    [SerializeField] private float chargeDuration = 0.45f;
     public int CurrentHP { get; private set; }
     public int MaxHP => maxHP;
     public float LaneDistance => laneDistance;
     public bool IsCharging { get; private set; }
     public float ChargeProgress => IsCharging ? Mathf.Clamp01((Time.time - chargeStarted) / chargeDuration) : 0f;
-    public bool CanAttack => GameManager.Instance != null && GameManager.Instance.IsPlaying && CurrentHP > 0;
+    public bool CanAttack => GameManager.Instance != null && GameManager.Instance.CanControl && CurrentHP > 0;
     private Rigidbody2D body;
     private Transform visual;
     private int currentLane = 1;
@@ -57,9 +57,13 @@ public class PlayerController : MonoBehaviour
             if (keyboard.downArrowKey.wasReleasedThisFrame) ReleaseCharge();
         }
         attackFlash = Mathf.Max(0f, attackFlash - Time.deltaTime);
-        visual.localPosition = Vector3.up * (Mathf.Sin(Time.time * 14f) * 0.035f + attackFlash * 0.6f) + feedback.Offset;
-        visual.localRotation = Quaternion.Euler(0, 0, IsCharging ? Mathf.Sin(Time.time * 35f) * ChargeProgress * 5f : Mathf.Sin(Time.time * 7f) * 2f);
-        visual.localScale = Vector3.one * (1f + ChargeProgress * 0.12f);
+        float stride = Mathf.Sin(Time.time * 14f);
+        float lean = Mathf.Clamp(((currentLane - 1) * laneDistance - body.position.x) * -12f, -15f, 15f);
+        float recoil = attackFlash / 0.2f;
+        visual.localPosition = Vector3.up * (Mathf.Abs(stride) * 0.07f - recoil * 0.12f) + feedback.Offset;
+        visual.localRotation = Quaternion.Euler(0, 0, lean + (IsCharging ? Mathf.Sin(Time.time * 35f) * ChargeProgress * 5f : stride * 3f));
+        visual.localScale = new Vector3(1f + ChargeProgress * 0.12f + recoil * 0.15f - stride * 0.025f,
+            1f + ChargeProgress * 0.06f - recoil * 0.12f + stride * 0.035f, 1f);
     }
     private void FixedUpdate()
     {
@@ -67,9 +71,20 @@ public class PlayerController : MonoBehaviour
         float x = Mathf.MoveTowards(body.position.x, (currentLane - 1) * laneDistance, moveSpeed * Time.fixedDeltaTime);
         body.MovePosition(new Vector2(x, groundY));
     }
-    public void MoveLeft() { if (CanAttack) currentLane = Mathf.Max(0, currentLane - 1); }
-    public void MoveRight() { if (CanAttack) currentLane = Mathf.Min(2, currentLane + 1); }
-    public void Attack() { if (!IsCharging) Fire(1, false); }
+    public void MoveLeft() { ChangeLane(-1); }
+    public void MoveRight() { ChangeLane(1); }
+    private void ChangeLane(int direction)
+    {
+        if (!CanAttack) return;
+        int next = Mathf.Clamp(currentLane + direction, 0, 2);
+        if (next == currentLane) return;
+        currentLane = next;
+        GameManager.Instance.ReportTutorialAction(0);
+    }
+    public void Attack()
+    {
+        if (!IsCharging && Fire(1, false)) GameManager.Instance.ReportTutorialAction(1);
+    }
     public void BeginCharge()
     {
         if (!CanAttack || IsCharging || Time.time < nextAttack) return;
@@ -81,19 +96,34 @@ public class PlayerController : MonoBehaviour
         if (!IsCharging) return;
         bool full = ChargeProgress >= 1f;
         IsCharging = false;
-        Fire(full ? 2 : 1, full);
+        bool fired = Fire(full ? 2 : 1, full);
+        if (full && fired) GameManager.Instance.ReportTutorialAction(2);
+        else if (!full) GameManager.Instance.HintIncompleteCharge();
     }
     public void CancelCharge() { IsCharging = false; }
-    private void Fire(int damage, bool piercing)
+    private bool Fire(int damage, bool piercing)
     {
-        if (!CanAttack || Time.time < nextAttack) return;
-        nextAttack = Time.time + attackCooldown;
+        if (!CanAttack || Time.time < nextAttack) return false;
+        // A full charge recovers quickly; normal fire still reacts faster to close threats.
+        nextAttack = Time.time + (piercing ? 0.12f : attackCooldown);
         attackFlash = 0.2f;
         MonsterShot.Create(new Vector3(body.position.x, groundY + 0.65f, 0f), damage, piercing);
+        return true;
+    }
+    public void ResetPractice()
+    {
+        CancelCharge();
+        currentLane = 1;
+        body.position = new Vector2(0f, groundY);
+        transform.position = new Vector3(0f, groundY, transform.position.z);
+        CurrentHP = maxHP;
+        nextAttack = attackFlash = 0f;
+        if (visual != null) { visual.localPosition = Vector3.zero; visual.localScale = Vector3.one; }
+        UpdateHP();
     }
     public void TakeMissDamage()
     {
-        if (!CanAttack) return;
+        if (!CanAttack || !GameManager.Instance.IsPlaying) return;
         CurrentHP = Mathf.Max(0, CurrentHP - 1);
         UpdateHP();
         feedback.Play(visual.position);

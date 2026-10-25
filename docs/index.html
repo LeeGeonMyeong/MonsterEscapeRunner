@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Monster Strike Runner</title>
+  <title>몬스터 스트라이크 러너</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main id="unity-container">
-    <canvas id="unity-canvas" width="480" height="854" tabindex="0" aria-label="Monster Strike Runner"></canvas>
+    <canvas id="unity-canvas" width="480" height="854" tabindex="0" aria-label="몬스터 스트라이크 러너"></canvas>
     <div id="unity-loading-bar" role="status">
-      <img class="hero" src="hero.png" alt="Runner hero">
-      <h1>MONSTER STRIKE<br>RUNNER</h1>
-      <p>Swipe to aim. Attack or charge. Stop every monster.</p>
+      <img class="hero" src="hero.png" alt="플레이어 캐릭터">
+      <h1>몬스터 스트라이크<br>러너</h1>
+      <p>좌우로 밀어 이동하고, 공격해 몬스터를 막아 보세요.</p>
       <progress id="progress" max="1" value="0"></progress>
-      <p id="loading-label">Loading 0%</p>
+      <p id="loading-label">불러오는 중 0%</p>
     </div>
     <div id="unity-warning" role="alert" hidden></div>
   </main>
@@ -23,16 +23,17 @@
     function unityShowBanner(message, type) {
       var banner = document.querySelector("#unity-warning");
       banner.hidden = false;
-      banner.textContent = message;
+      banner.textContent = /[가-힣]/.test(message) ? message : "게임을 불러오지 못했어요. 잠시 후 새로고침해 주세요.";
+      if (!/[가-힣]/.test(message)) console.error(message);
       if (type !== "error") setTimeout(() => { banner.hidden = true; }, 5000);
     }
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/docs.loader.js";
+      var loaderUrl = buildUrl + "/536ea790276da62e3f201e66bf7db0da.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/docs.data.unityweb",
-        frameworkUrl: buildUrl + "/docs.framework.js.unityweb",
-        codeUrl: buildUrl + "/docs.wasm.unityweb",
+        dataUrl: buildUrl + "/098bc7027f098e4f4dd77f70632ba117.data.unityweb",
+        frameworkUrl: buildUrl + "/f4054838284b89005d7b24c799302766.framework.js.unityweb",
+        codeUrl: buildUrl + "/8a8f9a8b5bc37cff52db343c88306690.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Monster Strike Runner",
@@ -63,18 +64,18 @@
     canvas.addEventListener("contextmenu", event => event.preventDefault());
     var script = document.createElement("script");
     script.src = loaderUrl;
-    script.onerror = () => unityShowBanner("Game files could not load. Refresh and check your connection.", "error");
+    script.onerror = () => unityShowBanner("게임을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.", "error");
     script.onload = () => {
       createUnityInstance(canvas, config, progress => {
         document.querySelector("#progress").value = progress;
-        document.querySelector("#loading-label").textContent = "Loading " + Math.round(progress * 100) + "%";
+        document.querySelector("#loading-label").textContent = "불러오는 중 " + Math.round(progress * 100) + "%";
       }).then(() => {
         document.querySelector("#unity-loading-bar").style.display = "none";
         canvas.focus();
       }).catch(message => unityShowBanner(message, "error"));
     };
     if (window.location.protocol === "file:") {
-      unityShowBanner("Use Unity Build And Run or an HTTP server to open this game.", "error");
+      unityShowBanner("게임 실행 주소로 접속해 주세요. 파일을 직접 열면 실행되지 않아요.", "error");
     } else {
       document.body.appendChild(script);
     }

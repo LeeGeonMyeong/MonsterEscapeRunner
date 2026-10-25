@@ -5,7 +5,8 @@ using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    public enum RunState { Ready, Playing, Ended }
+    public enum RunState { Ready, Tutorial, Playing, Ended }
+    public const string TutorialPreferenceKey = "Runner.Tutorial.v1";
     public static GameManager Instance { get; private set; }
     [SerializeField] private float duration = 60f;
     [SerializeField] private Canvas canvas;
@@ -15,11 +16,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int collisionScorePenalty = 30;
     public RunState State { get; private set; } = RunState.Ready;
     public bool IsPlaying => State == RunState.Playing;
+    public bool CanControl => IsPlaying || (State == RunState.Tutorial && TutorialStep < 3);
+    public int TutorialStep { get; private set; }
+    public bool HasLearnedControls => PlayerPrefs.GetInt(TutorialPreferenceKey, 0) == 1;
     public int CurrentScore => Mathf.Max(0, killScore - deductedScore);
     public float ElapsedTime => elapsed;
     public float DifficultyProgress => Mathf.Clamp01(elapsed / Mathf.Max(1f, duration));
     public int DifficultyLevel => Mathf.Min(4, Mathf.FloorToInt(DifficultyProgress * 4f) + 1);
-    public float ObstacleSpeed => Mathf.Lerp(Mathf.Max(0.1f, startingObstacleSpeed),
+    public float ObstacleSpeed => Mathf.Lerp(Mathf.Max(0.1f, startingObstacleSpeed * 0.73f),
         Mathf.Max(startingObstacleSpeed, maximumObstacleSpeed), DifficultyProgress);
     private float elapsed;
     private int deductedScore, killScore;
@@ -41,12 +45,17 @@ public class GameManager : MonoBehaviour
     private Text controlsHelp;
     private Image chargeFill;
     private Text chargeLabel;
+    private GameObject tutorialGuide, tutorialFinish;
+    private Text tutorialTitle, tutorialBody;
+    private Coroutine tutorialAdvance;
     private void Awake()
     {
         Instance = this;
         State = RunState.Ready;
         gameObject.AddComponent<RunnerBackground>();
-        font = hpText.font;
+        font = Resources.Load<Font>("Fonts/RunnerKorean");
+        if (font == null) throw new MissingReferenceException("한글 글꼴 RunnerKorean을 찾을 수 없습니다.");
+        hpText.font = font;
         player = FindFirstObjectByType<PlayerController>();
         CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -87,9 +96,11 @@ public class GameManager : MonoBehaviour
         button.targetGraphic = buttonObject.GetComponent<Image>();
         button.onClick.AddListener(Restart);
         Text label = MakeText("Label", buttonObject.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(280f, 80f), 30);
-        label.text = "RESTART";
+        label.text = "다시 시작";
         gameOverPanel.SetActive(false);
         BuildStartScreen();
+        BuildTutorial();
+        SetControlsVisible(false);
         RefreshStatus();
     }
     private void Update()
@@ -102,29 +113,31 @@ public class GameManager : MonoBehaviour
     }
     private void RefreshStatus()
     {
-        status.text = "TIME : " + Mathf.CeilToInt(Mathf.Max(0f, duration - elapsed)) + "    SCORE : " + CurrentScore + "\nKILLS : " + Kills + "    LEVEL : " + DifficultyLevel;
+        status.text = "남은 시간 " + Mathf.CeilToInt(Mathf.Max(0f, duration - elapsed)) + "초    점수 " + CurrentScore + "\n처치 " + Kills + "    단계 " + DifficultyLevel;
         if (DifficultyLevel > displayedLevel)
         {
             displayedLevel = DifficultyLevel;
             noticeTime = 1.6f;
-            levelNotice.text = "LEVEL " + displayedLevel + " - SPEED UP!";
+            levelNotice.text = displayedLevel + "단계 · 몬스터가 빨라져요!";
         }
     }
     public void EndGame(bool survived)
     {
         if (!IsPlaying) return;
         State = RunState.Ended;
-        result.text = (survived ? "SURVIVED!" : "GAME OVER") + "\nSCORE : " + CurrentScore + "\nKILLS : " + Kills + " / MISSED : " + Misses;
-        swipeArea.SetActive(false);
-        clickControls.SetActive(false);
-        holdControls.SetActive(false);
+        result.text = (survived ? "방어 성공!" : "게임 종료") + "\n최종 점수 " + CurrentScore + "\n처치 " + Kills + " / 놓침 " + Misses;
+        SetControlsVisible(false);
         gameOverPanel.SetActive(true);
+        gameOverPanel.transform.SetAsLastSibling();
     }
     private void Restart() { SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
     private void OnDestroy() { if (Instance == this) Instance = null; }
     public void StartGame()
     {
-        if (State != RunState.Ready) return;
+        if (State != RunState.Ready && State != RunState.Tutorial) return;
+        CancelTutorialAdvance();
+        ClearPracticeShots();
+        player.ResetPractice();
         elapsed = 0f;
         deductedScore = 0;
         killScore = 0;
@@ -133,6 +146,9 @@ public class GameManager : MonoBehaviour
         noticeTime = 0f;
         State = RunState.Playing;
         startPanel.SetActive(false);
+        tutorialGuide.SetActive(false);
+        tutorialFinish.SetActive(false);
+        SetControlsVisible(true);
         RefreshStatus();
     }
     public int ApplyCollisionPenalty()
@@ -155,12 +171,12 @@ public class GameManager : MonoBehaviour
         rect.offsetMin = rect.offsetMax = Vector2.zero;
         Text title = MakeText("GameTitle", startPanel.transform, new Vector2(0.5f, 0.5f),
             new Vector2(0f, 205f), new Vector2(460f, 120f), 38);
-        title.text = "MONSTER STRIKE\nRUNNER";
+        title.text = "몬스터 스트라이크\n러너";
         title.fontStyle = FontStyle.Bold;
         title.color = new Color(0.45f, 1f, 0.85f);
         Text rules = MakeText("StartRules", startPanel.transform, new Vector2(0.5f, 0.5f),
             new Vector2(0f, 80f), new Vector2(460f, 120f), 21);
-        rules.text = "Defeat monsters before they pass you\nSwipe: move / ATTACK: fire\nHold CHARGE, then release: power shot\nNormal: 1 HP / Orange: 2 HP\nMiss any lane: HP -1 / Score -30";
+        rules.text = "스와이프로 차선 이동\n일반 공격 · 꾹 눌러 충전\n어느 차선이든 놓치면 체력 1 감소\n일반 50점 · 강화 90점\n60초 동안 몬스터를 막아 보세요";
         rules.rectTransform.sizeDelta = new Vector2(460f, 180f);
         rules.rectTransform.anchoredPosition = new Vector2(0f, 30f);
         GameObject obj = new GameObject("StartButton", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -170,15 +186,152 @@ public class GameManager : MonoBehaviour
         background.color = new Color(0.08f, 0.5f, 0.45f);
         Button button = obj.GetComponent<Button>();
         button.targetGraphic = background;
-        button.onClick.AddListener(StartGame);
+        button.onClick.AddListener(StartRequested);
         Text label = MakeText("StartLabel", obj.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 85f), 32);
-        label.text = "START";
+        label.text = "게임 시작";
         label.fontStyle = FontStyle.Bold;
+        Button learn = MakeControlButton("LearnButton", startPanel.transform, new Vector2(0f, -260f),
+            new Vector2(280f, 55f), "조작 연습 다시 하기", new Vector2(0.5f, 0.5f));
+        learn.onClick.AddListener(BeginTutorial);
+        Text firstTime = MakeText("FirstPlayHint", startPanel.transform, new Vector2(0.5f, 0.5f),
+            new Vector2(0f, -320f), new Vector2(440f, 40f), 16);
+        firstTime.text = HasLearnedControls ? "조작이 헷갈리면 연습을 다시 해 보세요." : "첫 플레이는 3단계 조작 연습부터 시작해요.";
     }
     private void Start()
     {
         PlayerController player = FindFirstObjectByType<PlayerController>();
         if (player != null) SetHealth(player.CurrentHP, player.MaxHP);
+    }
+    private void StartRequested()
+    {
+        if (State != RunState.Ready) return;
+        if (HasLearnedControls) StartGame(); else BeginTutorial();
+    }
+    public void BeginTutorial()
+    {
+        if (State != RunState.Ready && State != RunState.Tutorial) return;
+        CancelTutorialAdvance();
+        ClearPracticeShots();
+        player.ResetPractice();
+        State = RunState.Tutorial;
+        TutorialStep = 0;
+        startPanel.SetActive(false);
+        tutorialFinish.SetActive(false);
+        tutorialGuide.SetActive(true);
+        SetControlsVisible(true);
+        RefreshTutorial();
+    }
+    public void ReportTutorialAction(int step)
+    {
+        if (State != RunState.Tutorial || TutorialStep != step || tutorialAdvance != null) return;
+        tutorialAdvance = StartCoroutine(AdvanceTutorial());
+    }
+    private IEnumerator AdvanceTutorial()
+    {
+        // Give the movement/projectile a moment to show before changing the instruction.
+        yield return new WaitForSecondsRealtime(0.4f);
+        tutorialAdvance = null;
+        if (State != RunState.Tutorial) yield break;
+        TutorialStep++;
+        if (TutorialStep < 3) RefreshTutorial();
+        else
+        {
+            RememberTutorial();
+            player.CancelCharge();
+            ClearPracticeShots();
+            SetControlsVisible(false);
+            tutorialGuide.SetActive(false);
+            tutorialFinish.SetActive(true);
+            tutorialFinish.transform.SetAsLastSibling();
+        }
+    }
+    public void HintIncompleteCharge()
+    {
+        if (State == RunState.Tutorial && TutorialStep == 2)
+            tutorialBody.text = "조금 더 길게 눌러 보세요!\n막대가 가득 차면 손을 떼세요.\n강한 공격이 여러 몬스터를 관통해요.";
+    }
+    private void RefreshTutorial()
+    {
+        string[] titles = { "1 / 3  좌우로 스와이프", "2 / 3  일반 공격", "3 / 3  충전 공격" };
+        string[] bodies = {
+            "화면의 빈 곳을 좌우로 밀어\n차선을 바꿔 보세요.\nPC: 좌우 방향키",
+            "아래의 [일반 공격]을 눌러요.\n현재 차선의 앞으로 발사해요.\n보라색 몬스터는 한 발로 처치해요.",
+            "아래 충전 버튼을 길게 누르세요.\n막대가 가득 차면 손을 떼세요.\n주황 몬스터도 한 발로 처치해요."
+        };
+        tutorialTitle.text = titles[TutorialStep];
+        tutorialBody.text = bodies[TutorialStep];
+    }
+    private void SkipTutorial()
+    {
+        if (State != RunState.Tutorial) return;
+        RememberTutorial();
+        StartGame();
+    }
+    private void RememberTutorial()
+    {
+        PlayerPrefs.SetInt(TutorialPreferenceKey, 1);
+        PlayerPrefs.Save();
+    }
+    private void CancelTutorialAdvance()
+    {
+        if (tutorialAdvance != null) StopCoroutine(tutorialAdvance);
+        tutorialAdvance = null;
+    }
+    private void ClearPracticeShots()
+    {
+        foreach (MonsterShot shot in FindObjectsByType<MonsterShot>(FindObjectsSortMode.None))
+        {
+            shot.gameObject.SetActive(false);
+            Destroy(shot.gameObject);
+        }
+    }
+    private void SetControlsVisible(bool visible)
+    {
+        swipeArea.SetActive(visible);
+        clickControls.SetActive(visible);
+        holdControls.SetActive(visible);
+        controlsHelp.gameObject.SetActive(visible);
+    }
+    private void BuildTutorial()
+    {
+        Image guide = MakeImage("TutorialGuide", canvas.transform, new Color(0.02f, 0.07f, 0.12f, 0.96f));
+        tutorialGuide = guide.gameObject;
+        Place(guide.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -200f), new Vector2(440f, 225f));
+        guide.rectTransform.pivot = new Vector2(0.5f, 1f);
+        tutorialTitle = MakeText("TutorialTitle", guide.transform, new Vector2(0.5f, 1f),
+            new Vector2(0f, -30f), new Vector2(420f, 40f), 25);
+        tutorialTitle.color = new Color(0.45f, 1f, 0.85f);
+        tutorialBody = MakeText("TutorialBody", guide.transform, new Vector2(0.5f, 1f),
+            new Vector2(0f, -100f), new Vector2(420f, 105f), 20);
+        Text safe = MakeText("TutorialSafeHint", guide.transform, new Vector2(0.5f, 1f),
+            new Vector2(0f, -162f), new Vector2(420f, 30f), 15);
+        safe.text = "연습 중에는 시간·체력·점수가 변하지 않아요.";
+        Button skip = MakeControlButton("SkipTutorialButton", guide.transform, new Vector2(0f, -199f),
+            new Vector2(180f, 38f), "연습 건너뛰기", new Vector2(0.5f, 1f));
+        skip.GetComponentInChildren<Text>().fontSize = 17;
+        skip.onClick.AddListener(SkipTutorial);
+        tutorialGuide.SetActive(false);
+        Image finish = MakeImage("TutorialFinish", canvas.transform, new Color(0.015f, 0.025f, 0.055f, 0.96f));
+        finish.raycastTarget = true;
+        tutorialFinish = finish.gameObject;
+        finish.rectTransform.anchorMin = Vector2.zero;
+        finish.rectTransform.anchorMax = Vector2.one;
+        finish.rectTransform.offsetMin = finish.rectTransform.offsetMax = Vector2.zero;
+        Text title = MakeText("TutorialFinishTitle", finish.transform, new Vector2(0.5f, 0.5f),
+            new Vector2(0f, 200f), new Vector2(440f, 80f), 34);
+        title.text = "조작 연습 완료!";
+        title.color = new Color(0.45f, 1f, 0.85f);
+        Text summary = MakeText("TutorialSummary", finish.transform, new Vector2(0.5f, 0.5f),
+            new Vector2(0f, 35f), new Vector2(440f, 200f), 22);
+        summary.text = "60초 동안 몬스터를 막아 보세요.\n일반 50점 · 강화 90점\n시간만 지나면 점수가 오르지 않아요.\n어느 차선이든 놓치면 체력 1 감소\n체력이 0이면 게임이 끝나요.";
+        Button play = MakeControlButton("TutorialPlayButton", finish.transform, new Vector2(0f, -160f),
+            new Vector2(300f, 85f), "전투 시작", new Vector2(0.5f, 0.5f));
+        play.GetComponentInChildren<Text>().fontSize = 30;
+        play.onClick.AddListener(StartGame);
+        Button retry = MakeControlButton("TutorialRetryButton", finish.transform, new Vector2(0f, -260f),
+            new Vector2(250f, 55f), "처음부터 다시 연습", new Vector2(0.5f, 0.5f));
+        retry.onClick.AddListener(BeginTutorial);
+        tutorialFinish.SetActive(false);
     }
     private void BuildPlayControls()
     {
@@ -201,10 +354,10 @@ public class GameManager : MonoBehaviour
             rect.offsetMin = rect.offsetMax = Vector2.zero;
         }
         Button attack = MakeControlButton("AttackButton", clickControls.transform,
-            new Vector2(-110f, 70f), new Vector2(170f, 85f), "ATTACK", new Vector2(0.5f, 0f));
+            new Vector2(-110f, 70f), new Vector2(170f, 85f), "일반 공격", new Vector2(0.5f, 0f));
         attack.onClick.AddListener(player.Attack);
         Button charge = MakeControlButton("ChargeButton", holdControls.transform,
-            new Vector2(110f, 70f), new Vector2(170f, 85f), "HOLD CHARGE", new Vector2(0.5f, 0f));
+            new Vector2(110f, 70f), new Vector2(170f, 85f), "꾹 눌러 충전", new Vector2(0.5f, 0f));
         charge.enabled = false;
         charge.GetComponent<Image>().color = new Color(0.4f, 0.23f, 0.1f, 0.95f);
         charge.gameObject.AddComponent<RunnerHoldInput>().player = player;
@@ -216,7 +369,7 @@ public class GameManager : MonoBehaviour
         chargeFill.rectTransform.localScale = new Vector3(0f, 1f, 1f);
         chargeLabel = charge.GetComponentInChildren<Text>();
         controlsHelp = MakeText("Controls", canvas.transform, new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(450f, 24f), 16);
-        controlsHelp.text = "Swipe to move / Space: attack / Down: charge";
+        controlsHelp.text = "좌우로 밀어 이동 · PC: 스페이스 공격 / ↓ 충전";
     }
     private Button MakeControlButton(string name, Transform parent, Vector2 position, Vector2 size, string text, Vector2 anchor)
     {
@@ -241,7 +394,7 @@ public class GameManager : MonoBehaviour
         if (!IsPlaying) return;
         Misses++;
         noticeTime = 0.8f;
-        levelNotice.text = "MONSTER ESCAPED!";
+        levelNotice.text = "몬스터를 놓쳤어요! 체력 -1";
         RefreshStatus();
     }
     private void BuildHealthBar()
@@ -265,7 +418,7 @@ public class GameManager : MonoBehaviour
     public void SetHealth(int hp, int maximum)
     {
         healthTarget = maximum > 0 ? Mathf.Clamp01((float)hp / maximum) : 0f;
-        hpText.text = "HP : " + hp + " / " + maximum;
+        hpText.text = "체력 " + hp + " / " + maximum;
     }
     public void ShowDamage(Vector3 worldPosition, int lostScore)
     {
@@ -286,7 +439,7 @@ public class GameManager : MonoBehaviour
         {
             Text scoreNumber = MakeText("ScorePenaltyNumber", canvas.transform, new Vector2(0.5f, 0.5f),
                 local + Vector2.up * 115f, new Vector2(220f, 45f), 24);
-            scoreNumber.text = "-" + lostScore + " SCORE";
+            scoreNumber.text = "점수 -" + lostScore;
             scoreNumber.fontStyle = FontStyle.Bold;
             scoreNumber.color = new Color(1f, 0.82f, 0.3f);
             StartCoroutine(FloatDamageNumber(scoreNumber));
@@ -296,7 +449,7 @@ public class GameManager : MonoBehaviour
     {
         if (healthFill == null) return;
         chargeFill.rectTransform.localScale = new Vector3(player.ChargeProgress, 1f, 1f);
-        chargeLabel.text = player.ChargeProgress >= 1f ? "RELEASE!" : "HOLD CHARGE";
+        chargeLabel.text = player.ChargeProgress >= 1f ? "손을 떼세요!" : (player.IsCharging ? "충전 중..." : "꾹 눌러 충전");
         float delta = Time.unscaledDeltaTime;
         noticeTime = Mathf.Max(0f, noticeTime - delta);
         levelNotice.color = new Color(1f, 0.8f, 0.3f, Mathf.Clamp01(noticeTime / 0.4f));

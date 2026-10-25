@@ -9,7 +9,7 @@ public class RunnerSwipeInput : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     public void OnPointerDown(PointerEventData e)
     {
         if (pointer.HasValue || player == null ||
-            GameManager.Instance == null || !GameManager.Instance.IsPlaying) return;
+            GameManager.Instance == null || !GameManager.Instance.CanControl) return;
         pointer = e.pointerId;
         start = e.position;
     }
