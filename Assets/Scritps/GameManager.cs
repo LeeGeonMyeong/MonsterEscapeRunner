@@ -176,7 +176,7 @@ public class GameManager : MonoBehaviour
         title.color = new Color(0.45f, 1f, 0.85f);
         Text rules = MakeText("StartRules", startPanel.transform, new Vector2(0.5f, 0.5f),
             new Vector2(0f, 80f), new Vector2(460f, 120f), 21);
-        rules.text = "스와이프로 차선 이동\n일반 공격 · 꾹 눌러 충전\n어느 차선이든 놓치면 체력 1 감소\n일반 50점 · 강화 90점\n60초 동안 몬스터를 막아 보세요";
+        rules.text = "◀ ▶ 버튼으로 차선 이동\n일반 공격 · 꾹 눌러 충전\n어느 차선이든 놓치면 체력 1 감소\n일반 50점 · 강화 90점\n60초 동안 몬스터를 막아 보세요";
         rules.rectTransform.sizeDelta = new Vector2(460f, 180f);
         rules.rectTransform.anchoredPosition = new Vector2(0f, 30f);
         GameObject obj = new GameObject("StartButton", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -252,9 +252,9 @@ public class GameManager : MonoBehaviour
     }
     private void RefreshTutorial()
     {
-        string[] titles = { "1 / 3  좌우로 스와이프", "2 / 3  일반 공격", "3 / 3  충전 공격" };
+        string[] titles = { "1 / 3  좌우 이동", "2 / 3  일반 공격", "3 / 3  충전 공격" };
         string[] bodies = {
-            "왼쪽 [이동] 패드를 좌우로 밀어\n차선을 바꿔 보세요.\n화면의 빈 곳이나 PC 방향키도 가능해요.",
+            "아래의 [◀] 또는 [▶]를 눌러\n차선을 바꿔 보세요.\nPC에서는 좌우 방향키도 가능해요.",
             "오른쪽 [공격]을 짧게 눌렀다 떼세요.\n현재 차선의 앞으로 발사해요.\n보라색 몬스터는 한 발로 처치해요.",
             "같은 오른쪽 [공격]을 길게 누르세요.\n막대가 가득 차면 손을 떼세요.\n주황 몬스터도 한 발로 처치해요."
         };
@@ -341,7 +341,6 @@ public class GameManager : MonoBehaviour
         surface.rectTransform.anchorMax = Vector2.one;
         surface.rectTransform.offsetMin = surface.rectTransform.offsetMax = Vector2.zero;
         surface.transform.SetAsFirstSibling();
-        surface.gameObject.AddComponent<RunnerSwipeInput>().player = player;
         holdControls = new GameObject("HoldControls", typeof(RectTransform));
         foreach (GameObject group in new[] { holdControls })
         {
@@ -351,11 +350,14 @@ public class GameManager : MonoBehaviour
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
         }
-        Button move = MakeControlButton("MovePad", holdControls.transform,
-            new Vector2(-110f, 70f), new Vector2(170f, 85f), "← 이동 →\n좌우로 밀기", new Vector2(0.5f, 0f));
-        move.enabled = false;
-        move.GetComponentInChildren<Text>().fontSize = 21;
-        move.gameObject.AddComponent<RunnerSwipeInput>().player = player;
+        Button left = MakeControlButton("MoveLeftButton", holdControls.transform,
+            new Vector2(-156f, 70f), new Vector2(80f, 85f), "◀", new Vector2(0.5f, 0f));
+        left.onClick.AddListener(player.MoveLeft);
+        left.GetComponentInChildren<Text>().fontSize = 34;
+        Button right = MakeControlButton("MoveRightButton", holdControls.transform,
+            new Vector2(-64f, 70f), new Vector2(80f, 85f), "▶", new Vector2(0.5f, 0f));
+        right.onClick.AddListener(player.MoveRight);
+        right.GetComponentInChildren<Text>().fontSize = 34;
         Button charge = MakeControlButton("ChargeButton", holdControls.transform,
             new Vector2(110f, 70f), new Vector2(170f, 85f), "공격\n길게 눌러 충전", new Vector2(0.5f, 0f));
         charge.enabled = false;
@@ -369,7 +371,7 @@ public class GameManager : MonoBehaviour
         chargeFill.rectTransform.localScale = new Vector3(0f, 1f, 1f);
         chargeLabel = charge.GetComponentInChildren<Text>();
         controlsHelp = MakeText("Controls", canvas.transform, new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(450f, 24f), 16);
-        controlsHelp.text = "좌우로 밀어 이동 · PC: 스페이스 공격 / ↓ 충전";
+        controlsHelp.text = "◀ ▶ 눌러 이동 · PC: 스페이스 공격 / ↓ 충전";
     }
     private Button MakeControlButton(string name, Transform parent, Vector2 position, Vector2 size, string text, Vector2 anchor)
     {

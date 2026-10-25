@@ -74,15 +74,14 @@ public static class RunnerTutorialCheck
                     player.TakeMissDamage();
                     Require(player.CurrentHP == 3, "Practice cannot damage player");
                     RunnerPreviewCapture.Save("TutorialSwipe");
-                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(0), ExecuteEvents.pointerDownHandler);
-                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(10), ExecuteEvents.pointerUpHandler);
-                    Require(manager.TutorialStep == 0 && !player.IsCharging, "Movement pad tap does not move or attack");
-                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(0), ExecuteEvents.pointerDownHandler);
-                    ExecuteEvents.Execute(GameObject.Find("MovePad"), Pointer(1000), ExecuteEvents.pointerUpHandler);
+                    Require(GameObject.Find("MovePad") == null, "Swipe pad replaced by arrow buttons");
+                    int shotsBeforeMove = UnityEngine.Object.FindObjectsByType<MonsterShot>(FindObjectsSortMode.None).Length;
+                    Click("MoveRightButton");
+                    Require(!player.IsCharging && UnityEngine.Object.FindObjectsByType<MonsterShot>(FindObjectsSortMode.None).Length == shotsBeforeMove, "Movement arrow does not attack");
                     deadline = Time.time + 0.5f;
                     break;
                 case 2:
-                    Require(manager.TutorialStep == 1 && player.transform.position.x > 1.9f, "Real swipe advances to attack lesson");
+                    Require(manager.TutorialStep == 1 && player.transform.position.x > 1.9f, "Right arrow advances to attack lesson");
                     RunnerPreviewCapture.Save("TutorialAttack");
                     Require(GameObject.Find("AttackButton") == null, "No duplicate attack button");
                     ExecuteEvents.Execute(GameObject.Find("ChargeButton"), Pointer(0), ExecuteEvents.pointerDownHandler);

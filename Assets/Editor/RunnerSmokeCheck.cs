@@ -113,9 +113,12 @@ public static class RunnerSmokeCheck
                     Require((int)typeof(GameManager).GetField("deductedScore", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager) == 30, "Miss deducts score once");
                     Spawn(0, 1); Spawn(-2, 3, 2);
                     RunnerPreviewCapture.Save("CombatPlaying");
-                    GameObject surface = GameObject.Find("MovePad");
-                    ExecuteEvents.Execute(surface, Pointer(0), ExecuteEvents.pointerDownHandler);
-                    ExecuteEvents.Execute(surface, Pointer(1000), ExecuteEvents.pointerUpHandler);
+                    GameObject.Find("MoveLeftButton").GetComponent<Button>().onClick.Invoke();
+                    GameObject.Find("MoveLeftButton").GetComponent<Button>().onClick.Invoke();
+                    GameObject.Find("MoveLeftButton").GetComponent<Button>().onClick.Invoke();
+                    Require((int)typeof(PlayerController).GetField("currentLane", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(player) == 0, "Left arrow stops at left lane boundary");
+                    for (int i = 0; i < 3; i++) GameObject.Find("MoveRightButton").GetComponent<Button>().onClick.Invoke();
+                    Require((int)typeof(PlayerController).GetField("currentLane", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(player) == 2, "Right arrow stops at right lane boundary");
                     deadline = Time.time + 0.3f;
                     break;
                 case 6:
