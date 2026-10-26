@@ -1,4 +1,5 @@
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #080f20; overscroll-behavior: none; }
+body { box-sizing: border-box; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 body { display: flex; align-items: center; justify-content: center; font-family: system-ui, -apple-system, "Malgun Gothic", sans-serif; color: #eefcf7; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 #unity-container { position: relative; flex: none; }
 #unity-canvas { width: 100%; height: 100%; display: block; background: #102238; touch-action: none; outline: none; }

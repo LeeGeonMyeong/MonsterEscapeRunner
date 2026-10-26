@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>몬스터 스트라이크 러너</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.1.0">
 </head>
 <body>
   <main id="unity-container">
     <canvas id="unity-canvas" width="480" height="854" tabindex="0" aria-label="몬스터 스트라이크 러너"></canvas>
     <div id="unity-loading-bar" role="status">
-      <img class="hero" src="hero.png" alt="플레이어 캐릭터">
+      <img class="hero" src="hero.png?v=1.1.0" alt="플레이어 캐릭터">
       <h1>몬스터 스트라이크<br>러너</h1>
       <p>화살표 버튼으로 이동하고, 공격해 몬스터를 막아 보세요.</p>
       <progress id="progress" max="1" value="0"></progress>
@@ -28,16 +28,16 @@
       if (type !== "error") setTimeout(() => { banner.hidden = true; }, 5000);
     }
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/14492a129044508cd2ea67c3759c6398.loader.js";
+      var loaderUrl = buildUrl + "/700c4455576a49842307341b1c9b304d.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/ff3c453b4bea8827cd8b8c2fe64a8169.data.unityweb",
+        dataUrl: buildUrl + "/19daca711b7a9e7f2130f52ab8bab942.data.unityweb",
         frameworkUrl: buildUrl + "/f4054838284b89005d7b24c799302766.framework.js.unityweb",
-        codeUrl: buildUrl + "/86662b26b630b00bb7d7de4511a93e8d.wasm.unityweb",
+        codeUrl: buildUrl + "/7cc385103863d93a33dc4790ffc8a98d.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Monster Strike Runner",
-        productVersion: "1.0",
+        productVersion: "1.1.0",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
@@ -53,6 +53,9 @@
       var viewport = window.visualViewport;
       var width = viewport ? viewport.width : window.innerWidth;
       var height = viewport ? viewport.height : window.innerHeight;
+      var safe = getComputedStyle(document.body);
+      width -= (parseFloat(safe.paddingLeft) || 0) + (parseFloat(safe.paddingRight) || 0);
+      height -= (parseFloat(safe.paddingTop) || 0) + (parseFloat(safe.paddingBottom) || 0);
       var gameWidth = Math.min(width, height * 480 / 854);
       var container = document.querySelector("#unity-container");
       container.style.width = gameWidth + "px";

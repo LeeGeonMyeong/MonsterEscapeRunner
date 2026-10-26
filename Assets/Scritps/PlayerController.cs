@@ -132,6 +132,13 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.ShowDamage(visual.position, lostScore);
         if (CurrentHP == 0) GameManager.Instance.EndGame(false);
     }
+    public bool RestoreHealth()
+    {
+        if (GameManager.Instance == null || !GameManager.Instance.IsPlaying || CurrentHP <= 0 || CurrentHP >= maxHP) return false;
+        CurrentHP++;
+        UpdateHP();
+        return true;
+    }
     private void OnApplicationFocus(bool focused) { if (!focused) CancelCharge(); }
     private void OnDisable() { CancelCharge(); }
     private void UpdateHP()

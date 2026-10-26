@@ -11,6 +11,7 @@ public static class RunnerWebBuild
     [MenuItem("Runner/Build Web for GitHub Pages")]
     public static void Build()
     {
+        PlayerSettings.bundleVersion = "1.1.0";
         PlayerSettings.defaultWebScreenWidth = 480;
         PlayerSettings.defaultWebScreenHeight = 854;
         PlayerSettings.WebGL.template = "PROJECT:RunnerPortrait";
