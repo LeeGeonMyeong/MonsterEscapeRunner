@@ -36,10 +36,10 @@ public static class RunnerItemCheck
             switch (stage)
             {
                 case 0:
-                    Require(GameObject.Find("BuildVersion").GetComponent<Text>().text == "v1.1.0", "Visible release version on menu");
+                    Require(GameObject.Find("BuildVersion").GetComponent<Text>().text == "v1.1.1", "Visible release version on menu");
                     manager.BeginTutorial();
                     RunnerPreviewCapture.Save("TopViewTutorial");
-                    RunnerItem practice = RunnerItem.Create(RunnerItem.Kind.Bonus, player.transform.position);
+                    RunnerItem practice = RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position);
                     Require(!practice.TryCollect(player) && manager.ItemScore == 0, "No item reward during tutorial");
                     manager.StartGame();
                     manager.GetComponent<ObstacleSpawner>().enabled = false;
@@ -51,17 +51,17 @@ public static class RunnerItemCheck
                     player.TakeMissDamage();
                     Require(player.CurrentHP == 2 && manager.CurrentScore == 20, "Miss penalty still applies to earned item points");
                     Require(RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position).TryCollect(player) && player.CurrentHP == 3, "Healing restores one HP");
-                    RunnerItem.Create(RunnerItem.Kind.Bonus, player.transform.position).TryCollect(player);
-                    Require(manager.ItemScore == 150 && manager.CurrentScore == 120 && manager.Kills == 0, "Bonus is 100 points without changing monster kills");
-                    RunnerItem wrongLane = RunnerItem.Create(RunnerItem.Kind.Bonus, player.transform.position + Vector3.right * 2f);
+                    RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position).TryCollect(player);
+                    Require(manager.ItemScore == 100 && manager.CurrentScore == 70 && manager.Kills == 0, "Full-health heal converts to 50 without changing kills");
+                    RunnerItem wrongLane = RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position + Vector3.right * 2f);
                     Require(!wrongLane.TryCollect(player), "Items in another lane cannot be collected");
                     wrongLane.transform.position = new Vector3(2f, ObstacleMover.MissBoundaryY - 0.2f, 0f);
-                    RunnerItem.Create(RunnerItem.Kind.Bonus, player.transform.position + Vector3.up * 0.6f);
+                    RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position + Vector3.up * 0.6f);
                     RunnerPreviewCapture.Save("TopViewItems");
                     deadline = Time.time + 0.5f;
                     break;
                 case 1:
-                    Require(manager.CurrentScore == 220 && manager.ItemsCollected == 4, "Falling item collects when crossing player");
+                    Require(manager.CurrentScore == 120 && manager.ItemsCollected == 4, "Falling item collects when crossing player");
                     Require(player.CurrentHP == 3 && manager.Misses == 1, "Missed item causes no damage or monster miss");
                     manager.GetComponent<RunnerItemSpawner>().enabled = true;
                     SetElapsed(manager, 6f);
@@ -75,12 +75,12 @@ public static class RunnerItemCheck
                     break;
                 case 3:
                     RunnerItem[] items = UnityEngine.Object.FindObjectsByType<RunnerItem>(FindObjectsSortMode.None);
-                    Require(items.Length == 2 && Array.Exists(items, x => x.ItemKind == RunnerItem.Kind.Bonus), "Scheduled items alternate heal and bonus");
+                    Require(items.Length == 2 && Array.TrueForAll(items, x => x.ItemKind == RunnerItem.Kind.Heal), "Every scheduled item heals; no gold crystals");
                     RunnerPreviewCapture.Save("TopViewScheduledItems");
                     manager.EndGame(true);
-                    Require(GameObject.Find("Result").GetComponent<Text>().text.Contains("아이템 4개 / 보너스 250"), "Result reports item totals");
+                    Require(GameObject.Find("Result").GetComponent<Text>().text.Contains("아이템 4개 / 보너스 150"), "Result reports item totals");
                     Require(GameObject.Find("BuildVersion").transform.GetSiblingIndex() > GameObject.Find("GameOverPanel").transform.GetSiblingIndex(), "Version remains visible above result overlay");
-                    Require(!RunnerItem.Create(RunnerItem.Kind.Bonus, player.transform.position).TryCollect(player), "No pickup after game ends");
+                    Require(!RunnerItem.Create(RunnerItem.Kind.Heal, player.transform.position).TryCollect(player), "No pickup after game ends");
                     RunnerPreviewCapture.Save("TopViewResult");
                     GameObject.Find("RestartButton").GetComponent<Button>().onClick.Invoke();
                     deadline = Time.time + 0.3f;

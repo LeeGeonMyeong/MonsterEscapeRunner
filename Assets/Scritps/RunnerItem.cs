@@ -2,14 +2,14 @@ using UnityEngine;
 
 public class RunnerItem : MonoBehaviour
 {
-    public enum Kind { Heal, Bonus }
+    public enum Kind { Heal }
     public Kind ItemKind { get; private set; }
     public bool IsCollected { get; private set; }
     private PlayerController player;
     private Transform visual;
     public static RunnerItem Create(Kind kind, Vector3 position)
     {
-        GameObject obj = new GameObject(kind == Kind.Heal ? "HealingItem" : "BonusCrystal");
+        GameObject obj = new GameObject("HealingItem");
         obj.transform.position = position;
         RunnerItem item = obj.AddComponent<RunnerItem>();
         item.ItemKind = kind;
@@ -17,16 +17,8 @@ public class RunnerItem : MonoBehaviour
         item.visual = new GameObject("ItemVisual").transform;
         item.visual.SetParent(obj.transform, false);
         item.Part("Outline", new Vector2(0.64f, 0.64f), new Color(0.04f, 0.12f, 0.18f), 45f, 5);
-        if (kind == Kind.Heal)
-        {
-            item.Part("HealVertical", new Vector2(0.18f, 0.5f), new Color(0.25f, 1f, 0.65f), 0f, 6);
-            item.Part("HealHorizontal", new Vector2(0.5f, 0.18f), new Color(0.25f, 1f, 0.65f), 0f, 6);
-        }
-        else
-        {
-            item.Part("GoldCrystal", new Vector2(0.44f, 0.54f), new Color(1f, 0.7f, 0.16f), 45f, 6);
-            item.Part("CrystalCore", new Vector2(0.16f, 0.3f), new Color(1f, 0.96f, 0.65f), 45f, 7);
-        }
+        item.Part("HealVertical", new Vector2(0.18f, 0.5f), new Color(0.25f, 1f, 0.65f), 0f, 6);
+        item.Part("HealHorizontal", new Vector2(0.5f, 0.18f), new Color(0.25f, 1f, 0.65f), 0f, 6);
         return item;
     }
     private void Part(string name, Vector2 size, Color color, float rotation, int order)
@@ -64,7 +56,7 @@ public class RunnerItem : MonoBehaviour
         IsCollected = true;
         gameObject.SetActive(false);
         GameManager.Instance.CollectItem(ItemKind);
-        MonsterShot.Burst(transform.position, ItemKind == Kind.Heal ? new Color(0.2f, 1f, 0.6f) : new Color(1f, 0.75f, 0.2f));
+        MonsterShot.Burst(transform.position, new Color(0.2f, 1f, 0.6f));
         Destroy(gameObject);
         return true;
     }
